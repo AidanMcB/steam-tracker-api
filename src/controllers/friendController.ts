@@ -11,6 +11,9 @@ import {
     SteamIdQuery
 } from '../types/express';
 
+require('dotenv').config(); // Not needed for Railway, but useful locally
+
+
 // Get friend list
 const getFriendList = async (req: RequestWithParams<SteamIdParam>, res: Response): Promise<void> => {
     try {

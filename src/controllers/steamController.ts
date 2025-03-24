@@ -10,6 +10,9 @@ import {
     CountQuery
 } from '../types/express';
 
+require('dotenv').config(); // Not needed for Railway, but useful locally
+
+
 // Search for users by username
 const searchUsers = async (req: Request, res: Response): Promise<void> => {
     try {

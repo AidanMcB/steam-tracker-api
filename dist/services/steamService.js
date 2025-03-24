@@ -21,6 +21,7 @@ exports.getGameAchievements = getGameAchievements;
 exports.getPlaytimeSummary = getPlaytimeSummary;
 exports.resolveVanityURL = resolveVanityURL;
 exports.resolveSteamID = resolveSteamID;
+exports.searchUsers = searchUsers;
 const axios_1 = __importDefault(require("axios"));
 const dotenv_1 = __importDefault(require("dotenv"));
 // Load environment variables
@@ -306,6 +307,8 @@ function getPlaytimeSummary(steamId) {
                 name: game.name,
                 playtime_hours: parseFloat((game.playtime_forever / 60).toFixed(2)),
                 percentage: ((game.playtime_forever / totalPlaytimeMinutes) * 100).toFixed(2) + '%',
+                img_icon_url: game.img_icon_url,
+                img_logo_url: game.img_logo_url,
             }));
             return {
                 total_games: ownedGames.game_count,
@@ -319,6 +322,82 @@ function getPlaytimeSummary(steamId) {
         catch (error) {
             console.error('Error creating playtime summary:', error.message);
             throw error;
+        }
+    });
+}
+/**
+ * Search for users by username (partial match)
+ * This function scrapes the Steam Community search page as there is no official API for this
+ * @param {string} searchTerm - Username to search for
+ * @param {number} limit - Maximum number of results to return (default: 10)
+ * @returns {Promise<Array<{steamId: string, personaName: string, avatarUrl: string}>>} List of matching users
+ */
+function searchUsers(searchTerm_1) {
+    return __awaiter(this, arguments, void 0, function* (searchTerm, limit = 10) {
+        try {
+            console.log('Searching for users:', searchTerm);
+            // First try to resolve the exact username
+            try {
+                const exactId = yield resolveVanityURL(searchTerm);
+                const userData = yield getUserSummary(exactId);
+                // Return the exact match as the first result
+                return [{
+                        steamId: exactId,
+                        personaName: userData.personaname,
+                        avatarUrl: userData.avatar
+                    }];
+            }
+            catch (error) {
+                // If it fails, continue with the search
+                console.log(`No exact match for "${searchTerm}", trying search...`);
+            }
+            // Since there is no official API for searching users, we need to scrape the Steam Community search page
+            // Warning: This is an unofficial approach and may break if Steam changes their website
+            const response = yield axios_1.default.get('https://steamcommunity.com/search/SearchCommunityAjax', {
+                params: {
+                    text: searchTerm,
+                    filter: 'users',
+                    sessionid: 'steamcommunity', // This is a dummy session ID, may not always work
+                    page: 1
+                },
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    'Accept': 'application/json, text/javascript, */*; q=0.01',
+                    'Referer': 'https://steamcommunity.com/search/users/'
+                }
+            });
+            let results = [];
+            // Parse the response based on Steam's format
+            // This might need adjustments based on the actual response format
+            if (response.data && response.data.html) {
+                // Use regex to extract user information from the HTML response
+                const userPattern = /<a class="searchPersonaName" href="https:\/\/steamcommunity\.com\/id\/([^"]+)|\/profiles\/([^"]+)"[^>]*>([^<]+)<\/a>.*?<img src="([^"]+)"/g;
+                let match;
+                while ((match = userPattern.exec(response.data.html)) !== null && results.length < limit) {
+                    // Extract steamId from the URL (either /id/ or /profiles/)
+                    let steamId = match[2] || ''; // If it's a /profiles/ URL
+                    if (!steamId && match[1]) {
+                        // If it's an /id/ URL, we need to resolve the vanity URL
+                        try {
+                            steamId = yield resolveVanityURL(match[1]);
+                        }
+                        catch (error) {
+                            console.error(`Error resolving vanity URL for ${match[1]}:`, error.message);
+                            continue;
+                        }
+                    }
+                    results.push({
+                        steamId,
+                        personaName: match[3] || '',
+                        avatarUrl: match[4] || ''
+                    });
+                }
+            }
+            return results;
+        }
+        catch (error) {
+            console.error('Error searching for users:', error.message);
+            throw new Error(`Failed to search for users matching "${searchTerm}": ${error.message}`);
         }
     });
 }

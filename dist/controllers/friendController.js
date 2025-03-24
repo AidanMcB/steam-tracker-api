@@ -45,6 +45,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.comparePlaytimeSummary = exports.getSharedGames = exports.compareGameAchievements = exports.compareGamePlaytime = exports.getFriendsWithDetails = exports.getFriendList = void 0;
 const friendService = __importStar(require("../services/friendService"));
 const steamService = __importStar(require("../services/steamService"));
+require('dotenv').config(); // Not needed for Railway, but useful locally
 // Get friend list
 const getFriendList = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {

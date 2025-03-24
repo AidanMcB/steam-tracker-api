@@ -39,8 +39,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const steamController = __importStar(require("../controllers/steamController"));
 const router = express_1.default.Router();
+// User search route
+router.get('/search/users', steamController.searchUsers);
 // Steam user profile routes
 router.get('/user/:steamId', steamController.getUserProfile);
+router.get('/users', steamController.getMultipleUserSummaries);
 router.get('/games/:steamId', steamController.getOwnedGames);
 router.get('/app/:appId', steamController.getAppDetails);
 // Game specific routes
@@ -48,6 +51,7 @@ router.get('/game/:appId/playtime', steamController.getGamePlaytime);
 router.get('/game/:appId/achievements', steamController.getGameAchievements);
 // User statistics routes
 router.get('/mystats', steamController.getMyStats);
+router.get('/stats/:steamId', steamController.getUserStats);
 router.get('/playtime-summary', steamController.getPlaytimeSummary);
 router.get('/recent-games', steamController.getRecentGames);
 exports.default = router;

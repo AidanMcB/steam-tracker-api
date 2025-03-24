@@ -9,6 +9,8 @@ const dotenv_1 = __importDefault(require("dotenv"));
 // Import routes
 const steamRoutes_1 = __importDefault(require("./routes/steamRoutes"));
 const friendRoutes_1 = __importDefault(require("./routes/friendRoutes"));
+// Import middleware
+const middleware_1 = require("./utils/middleware");
 // Load environment variables
 dotenv_1.default.config({ path: '.env.local' });
 // Initialize Express app
@@ -17,6 +19,8 @@ const PORT = process.env.PORT || 3008;
 // Middleware
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
+// Apply camelCase transformation to all responses
+app.use(middleware_1.camelCaseResponse);
 // Welcome route
 app.get('/', (_req, res) => {
     res.json({

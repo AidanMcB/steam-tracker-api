@@ -42,8 +42,26 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getMyStats = exports.getRecentGames = exports.getPlaytimeSummary = exports.getGameAchievements = exports.getGamePlaytime = exports.getAppDetails = exports.getOwnedGames = exports.getUserProfile = void 0;
+exports.getMultipleUserSummaries = exports.searchUsers = exports.getUserStats = exports.getMyStats = exports.getRecentGames = exports.getPlaytimeSummary = exports.getGameAchievements = exports.getGamePlaytime = exports.getAppDetails = exports.getOwnedGames = exports.getUserProfile = void 0;
 const steamService = __importStar(require("../services/steamService"));
+require('dotenv').config(); // Not needed for Railway, but useful locally
+// Search for users by username
+const searchUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { query } = req.query;
+        const limit = req.query.limit ? parseInt(req.query.limit, 10) : 10;
+        if (!query) {
+            res.status(400).json({ error: 'Search query is required' });
+            return;
+        }
+        const searchResults = yield steamService.searchUsers(query, limit);
+        res.json({ results: searchResults });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+exports.searchUsers = searchUsers;
 // Get user profile by ID or username
 const getUserProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -164,6 +182,48 @@ const getGameAchievements = (req, res) => __awaiter(void 0, void 0, void 0, func
     }
 });
 exports.getGameAchievements = getGameAchievements;
+// get multiple user summaries
+const getMultipleUserSummaries = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { steamIds } = req.query;
+        let idList = [];
+        // Handle comma-separated string format: steamIds=123,456,789
+        if (typeof steamIds === 'string') {
+            idList = steamIds.split(',').map(id => id.trim()).filter(id => id.length > 0);
+        }
+        // Handle array format: steamIds[]=123&steamIds[]=456
+        else if (Array.isArray(steamIds)) {
+            idList = steamIds.map(id => String(id));
+        }
+        if (idList.length === 0) {
+            res.status(400).json({ error: 'At least one Steam ID must be provided as steamIds=id1,id2,id3 or steamIds[]=id1&steamIds[]=id2' });
+            return;
+        }
+        // Resolve each ID or username to a Steam ID if needed
+        const resolvedIds = [];
+        for (const id of idList) {
+            try {
+                const resolvedId = yield steamService.resolveSteamID(id);
+                resolvedIds.push(resolvedId);
+            }
+            catch (error) {
+                // Log the error but continue with other IDs
+                console.error(`Failed to resolve Steam ID: ${id}`, error);
+            }
+        }
+        if (resolvedIds.length === 0) {
+            res.status(404).json({ error: 'Could not resolve any of the provided Steam IDs or usernames' });
+            return;
+        }
+        // Fetch individual user summaries if the batch function doesn't exist
+        const userSummaries = yield Promise.all(resolvedIds.map(id => steamService.getUserSummary(id)));
+        res.json({ users: userSummaries });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+exports.getMultipleUserSummaries = getMultipleUserSummaries;
 // Get playtime summary
 const getPlaytimeSummary = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -245,4 +305,26 @@ const getMyStats = (_req, res) => __awaiter(void 0, void 0, void 0, function* ()
     }
 });
 exports.getMyStats = getMyStats;
+// Get my Steam stats (comprehensive endpoint)
+const getUserStats = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { steamId } = req.params;
+        if (!steamId) {
+            res.status(400).json({ error: 'No steam id sent' });
+            return;
+        }
+        const userProfile = yield steamService.getUserSummary(steamId);
+        const playtimeSummary = yield steamService.getPlaytimeSummary(steamId);
+        const recentGames = yield steamService.getRecentPlayedGames(steamId);
+        res.json({
+            profile: userProfile,
+            playtime_summary: playtimeSummary,
+            recent_games: recentGames
+        });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+exports.getUserStats = getUserStats;
 //# sourceMappingURL=steamController.js.map
