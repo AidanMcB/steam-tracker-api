@@ -265,7 +265,7 @@ const getRecentGames = async (req: RequestWithQuery<SteamIdQuery & CountQuery>, 
 // Get my Steam stats (comprehensive endpoint)
 const getMyStats = async (_req: Request, res: Response): Promise<void> => {
     try {
-        console.log('Recieve required: ', _req)
+        console.log('Recieve required - getMyStats()')
         const steamId = process.env.HM_STEAM_ID;
         console.log('Steam id accessed: ', steamId)
         if (!steamId) {

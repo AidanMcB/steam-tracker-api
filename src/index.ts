@@ -11,7 +11,10 @@ import friendRoutes from './routes/friendRoutes';
 import { camelCaseResponse } from './utils/middleware';
 
 // Load environment variables
-dotenv.config({ path: '.env.local' });
+if (process.env.NODE_ENV !== 'production') {
+    dotenv.config({ path: '.env.local' });
+}
+  
 
 // Initialize Express app
 const app = express();

@@ -11,7 +11,10 @@ import {
 } from '../types/steam';
 
 // Load environment variables
-dotenv.config({ path: '.env.local' });
+if (process.env.NODE_ENV !== 'production') {
+    dotenv.config({ path: '.env.local' });
+}
+  
 
 // Steam API configuration
 const STEAM_API_KEY = process.env.STEAM_API_KEY;
