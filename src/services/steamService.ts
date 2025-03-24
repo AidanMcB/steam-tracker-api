@@ -75,6 +75,7 @@ async function resolveSteamID(idOrUsername: string): Promise<string> {
  */
 async function getUserSummary(steamId: string): Promise<SteamUser> {
     try {
+        console.log('getUserSummary() ...', STEAM_API_KEY)
         const response = await axios.get(
             'https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/',
             {
