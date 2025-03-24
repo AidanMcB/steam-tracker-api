@@ -13,6 +13,7 @@ services:
       - NODE_ENV=${NODE_ENV}  # Automatically takes the value from .env.local or Railway
       - PORT=${PORT}
       - API_KEY=${API_KEY}  # Value injected by Railway in production
+      - HM_STEAM_ID=${HM_STEAM_ID}
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3008"]
       interval: 30s
