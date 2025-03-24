@@ -265,7 +265,9 @@ const getRecentGames = async (req: RequestWithQuery<SteamIdQuery & CountQuery>, 
 // Get my Steam stats (comprehensive endpoint)
 const getMyStats = async (_req: Request, res: Response): Promise<void> => {
     try {
+        console.log('Recieve required: ', _req)
         const steamId = process.env.HM_STEAM_ID;
+        console.log('Steam id accessed: ', steamId)
         if (!steamId) {
             res.status(400).json({ error: 'HM_STEAM_ID not set in environment variables' });
             return;
@@ -275,12 +277,15 @@ const getMyStats = async (_req: Request, res: Response): Promise<void> => {
         const playtimeSummary = await steamService.getPlaytimeSummary(steamId);
         const recentGames = await steamService.getRecentPlayedGames(steamId);
 
+        console.log('successfully generated user profile, playtime summary, and recent games list.')
+
         res.json({
             profile: userProfile,
             playtime_summary: playtimeSummary,
             recent_games: recentGames
         });
     } catch (error) {
+        console.log('Unable to get mystats, error: ', error)
         res.status(500).json({ error: (error as Error).message });
     }
 };
