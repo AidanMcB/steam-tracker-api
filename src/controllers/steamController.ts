@@ -9,6 +9,7 @@ import {
     SteamIdQuery,
     CountQuery
 } from '../types/express';
+import { GameAchievementsAndInGameStatsV2 } from '../types/steam';
 
 require('dotenv').config(); // Not needed for Railway, but useful locally
 
@@ -265,7 +266,6 @@ const getRecentGames = async (req: RequestWithQuery<SteamIdQuery & CountQuery>, 
 // Get my Steam stats (comprehensive endpoint)
 const getMyStats = async (_req: Request, res: Response): Promise<void> => {
     try {
-        console.log('Recieve required - getMyStats()')
         const steamId = process.env.HM_STEAM_ID;
         console.log('Steam id accessed: ', steamId)
         if (!steamId) {
@@ -313,6 +313,22 @@ const getUserStats = async (req: Request, res: Response): Promise<void> => {
     }
 };
 
+const getL4dStats = async (req: Request, res: Response): Promise<GameAchievementsAndInGameStatsV2 | void> => {
+    try {
+        const { steamId } = req.params;
+        if (!steamId) {
+            res.status(400).json({ error: 'No steam id sent' });
+            return;
+        }
+
+        const gameStats = await steamService.getLeftForDeadTwoStats(steamId);
+
+        res.json(gameStats)
+    } catch (error) {
+        res.status(500).json({ error: (error as Error).message });
+    }
+};
+
 export {
     getUserProfile,
     getOwnedGames,
@@ -324,5 +340,6 @@ export {
     getMyStats,
     getUserStats,
     searchUsers,
-    getMultipleUserSummaries
+    getMultipleUserSummaries,
+    getL4dStats
 }; 

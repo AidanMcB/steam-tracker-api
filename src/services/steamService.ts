@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 import dotenv from 'dotenv';
 import {
     SteamUser,
@@ -7,14 +7,15 @@ import {
     GamePlaytime,
     GameAchievements,
     PlaytimeSummary,
-    ErrorResponse
+    ErrorResponse,
+    GameAchievementsAndInGameStatsV2
 } from '../types/steam';
 
 // Load environment variables
 if (process.env.NODE_ENV !== 'production') {
     dotenv.config({ path: '.env.local' });
 }
-  
+
 
 // Steam API configuration
 const STEAM_API_KEY = process.env.STEAM_API_KEY;
@@ -62,7 +63,7 @@ async function resolveVanityURL(username: string): Promise<string> {
 async function resolveSteamID(idOrUsername: string): Promise<string> {
     // Simple regex to check if the string is likely a Steam ID (17-digit number)
     const steamIDRegex = /^[0-9]{17}$/;
-    
+
     if (steamIDRegex.test(idOrUsername)) {
         return idOrUsername; // It's already a Steam ID
     } else {
@@ -78,7 +79,7 @@ async function resolveSteamID(idOrUsername: string): Promise<string> {
  */
 async function getUserSummary(steamId: string): Promise<SteamUser> {
     try {
-        console.log('getUserSummary() ...', STEAM_API_KEY)
+        console.log('getUserSummary() API key is ...', STEAM_API_KEY)
         const response = await axios.get(
             'https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/',
             {
@@ -311,7 +312,7 @@ async function getPlaytimeSummary(steamId: string): Promise<PlaytimeSummary> {
             playtime_hours: parseFloat((game.playtime_forever / 60).toFixed(2)),
             percentage: ((game.playtime_forever / totalPlaytimeMinutes) * 100).toFixed(2) + '%',
             img_icon_url: game.img_icon_url,
-            img_logo_url: game.img_logo_url, 
+            img_logo_url: game.img_logo_url,
 
         }));
         return {
@@ -335,14 +336,14 @@ async function getPlaytimeSummary(steamId: string): Promise<PlaytimeSummary> {
  * @param {number} limit - Maximum number of results to return (default: 10)
  * @returns {Promise<Array<{steamId: string, personaName: string, avatarUrl: string}>>} List of matching users
  */
-async function searchUsers(searchTerm: string, limit: number = 10): Promise<Array<{steamId: string, personaName: string, avatarUrl: string}>> {
+async function searchUsers(searchTerm: string, limit: number = 10): Promise<Array<{ steamId: string, personaName: string, avatarUrl: string }>> {
     try {
         console.log('Searching for users:', searchTerm);
         // First try to resolve the exact username
         try {
             const exactId = await resolveVanityURL(searchTerm);
             const userData = await getUserSummary(exactId);
-            
+
             // Return the exact match as the first result
             return [{
                 steamId: exactId,
@@ -370,19 +371,19 @@ async function searchUsers(searchTerm: string, limit: number = 10): Promise<Arra
             }
         });
 
-        let results: Array<{steamId: string, personaName: string, avatarUrl: string}> = [];
-        
+        let results: Array<{ steamId: string, personaName: string, avatarUrl: string }> = [];
+
         // Parse the response based on Steam's format
         // This might need adjustments based on the actual response format
         if (response.data && response.data.html) {
             // Use regex to extract user information from the HTML response
             const userPattern = /<a class="searchPersonaName" href="https:\/\/steamcommunity\.com\/id\/([^"]+)|\/profiles\/([^"]+)"[^>]*>([^<]+)<\/a>.*?<img src="([^"]+)"/g;
-            
+
             let match;
             while ((match = userPattern.exec(response.data.html)) !== null && results.length < limit) {
                 // Extract steamId from the URL (either /id/ or /profiles/)
                 let steamId = match[2] || '';  // If it's a /profiles/ URL
-                
+
                 if (!steamId && match[1]) {
                     // If it's an /id/ URL, we need to resolve the vanity URL
                     try {
@@ -392,7 +393,7 @@ async function searchUsers(searchTerm: string, limit: number = 10): Promise<Arra
                         continue;
                     }
                 }
-                
+
                 results.push({
                     steamId,
                     personaName: match[3] || '',
@@ -400,11 +401,40 @@ async function searchUsers(searchTerm: string, limit: number = 10): Promise<Arra
                 });
             }
         }
-        
+
         return results;
     } catch (error) {
         console.error('Error searching for users:', (error as Error).message);
         throw new Error(`Failed to search for users matching "${searchTerm}": ${(error as Error).message}`);
+    }
+}
+
+//
+/**
+ * Get playtime data for a specific game
+ * @param {string} steamId - Steam ID of the user
+ * @returns {Promise<GameAchievementsAndInGameStatsV2>} L4D 2 specific player data
+ */
+async function getLeftForDeadTwoStats(steamId: string): Promise<GameAchievementsAndInGameStatsV2> {
+    console.log('hit steam service with steamid: ', steamId)
+    try {
+        const appid = 550;
+
+        const response = await axios.get(
+            'https://api.steampowered.com/ISteamUserStats/GetUserStatsForGame/v2', {
+                params: {
+                    key: STEAM_API_KEY,
+                    steamid: steamId,
+                    appid: appid,
+                },
+            }
+        );
+
+        const data = response.data
+        return data
+    } catch (error) {
+        console.error('Error fetching left for dead 2 game data:', (error as Error).message);
+        throw error;
     }
 }
 
@@ -418,5 +448,6 @@ export {
     getPlaytimeSummary,
     resolveVanityURL,
     resolveSteamID,
-    searchUsers
+    searchUsers,
+    getLeftForDeadTwoStats
 }; 

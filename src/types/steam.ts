@@ -220,3 +220,21 @@ export interface ErrorResponse {
     steam_id?: string;
     game_id?: number | string;
 } 
+
+export interface GameAchievementsAndInGameStatsV2 {
+    playerStats: {
+        steamID: string,
+        gameName: string,
+        achievements: GameAchievement[]
+    }
+}
+
+export interface GameAchievement {
+    name: string
+    achieved: number // 1 is yes, likely 0 is no?
+}
+
+export interface InGameStats {
+    name: string // period separated example: Stat.katana.HeadAccuracy.Total
+    value: number // count
+}

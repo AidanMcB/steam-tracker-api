@@ -32,3 +32,6 @@ pids
 # OS files
 .DS_Store
 Thumbs.db 
+
+# Misc
+src/dataTranslations

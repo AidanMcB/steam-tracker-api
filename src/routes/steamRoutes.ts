@@ -15,6 +15,7 @@ router.get('/app/:appId', steamController.getAppDetails);
 // Game specific routes
 router.get('/game/:appId/playtime', steamController.getGamePlaytime);
 router.get('/game/:appId/achievements', steamController.getGameAchievements);
+router.get('/game/lfd2/stats/:steamId', steamController.getL4dStats);
 
 // User statistics routes
 router.get('/mystats', steamController.getMyStats);
